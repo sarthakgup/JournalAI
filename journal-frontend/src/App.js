@@ -2,29 +2,41 @@ import React, { useState } from 'react';
 
 function App() {
   const [snippets, setSnippets] = useState([]);
-  const [currentSnippet, setCurrentSnippet] = useState("");
-  const [summary, setSummary] = useState("");
+  const [currentSnippet, setCurrentSnippet] = useState('');
+  const [summary, setSummary] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const addSnippet = () => {
     if (currentSnippet.trim()) {
       setSnippets([...snippets, currentSnippet.trim()]);
-      setCurrentSnippet("");
+      setCurrentSnippet('');
     }
   };
 
   const generateSummary = async () => {
     setLoading(true);
-    const res = await fetch("http://127.0.0.1:8000/summarize", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ snippets })
-    });
-    const data = await res.json();
-    setSummary(data.summary);
-    setLoading(false);
+    setError('');
+    try {
+      const res = await fetch('http://localhost:8000/summarize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ snippets })
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch summary');
+      }
+
+      const data = await res.json();
+      setSummary(data.summary);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -52,7 +64,7 @@ function App() {
             onClick={generateSummary}
             disabled={snippets.length === 0 || loading}
           >
-            {loading ? "Summarizing..." : "Summarize Day"}
+            {loading ? 'Summarizing...' : 'Summarize Day'}
           </button>
         </div>
 
@@ -65,6 +77,10 @@ function App() {
               ))}
             </ul>
           </div>
+        )}
+
+        {error && (
+          <div className="text-red-500 font-semibold mb-2">{error}</div>
         )}
 
         {summary && (
